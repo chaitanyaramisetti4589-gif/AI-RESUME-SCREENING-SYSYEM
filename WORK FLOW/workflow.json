@@ -1,0 +1,342 @@
+{
+  "name": "AI RESUME SCREENING AND RANK GENERATION SYSYEM",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "4aa60238-6cbd-4dd7-bb38-53a3598daa39",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "755c2ff4-a073-476b-9ad8-47b1c25b4e6a",
+      "name": "Webhook",
+      "webhookId": "4aa60238-6cbd-4dd7-bb38-53a3598daa39"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first();\n\nconst binaries = input.binary || {};\n\nconst output = [];\n\nfor (const key of Object.keys(binaries)) {\n\n    output.push({\n        json: {\n            jobDescription: input.json.jobDescription,\n            email: input.json.email,\n            fileName: binaries[key].fileName\n        },\n        binary: {\n            data: binaries[key]\n        }\n    });\n\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        32
+      ],
+      "id": "03d372c2-ecde-43f9-bc1d-58614a8db5fd",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        32
+      ],
+      "id": "822ab5d6-6ad6-4a00-a90c-9f9474d57a8a",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Job Description:\n\n{{ $('Webhook').item.json.body.jobDescription }}\n\nResume:\n\n{{ $json.text }}\n\nCompare the resume with the job description.\n\nAssign a compatibility score from 0 to 100.\n\nReturn ONLY valid JSON.\n\n{\n  \"candidate_name\": \"\",\n  \"score\": 0,\n  \"matching_skills\": [],\n  \"missing_skills\": [],\n  \"strengths\": [],\n  \"weaknesses\": [],\n  \"recommendation\": \"\",\n  \"reason\": \"\"\n}",
+        "options": {
+          "systemMessage": "You are an experienced HR recruiter.\n\nEvaluate the candidate fairly.\n\nScoring Criteria\n\nSkills Match (40%)\n\nExperience (25%)\n\nEducation (10%)\n\nRelevant Certifications (10%)\n\nTransferable Skills (10%)\n\nResume Quality (5%)\n\nAssign a score between 0 and 100.\n\nDo not give 0 unless the resume has absolutely no relevance to the job.\n\nUse these score ranges:\n\n90–100 = Highly Recommended\n\n75–89 = Recommended\n\n60–74 = Consider\n\n40–59 = Weak Match\n\n0–39 = Not Recommended\n\nReturn ONLY valid JSON.\nWhen evaluating candidates, consider transferable skills.\n\nExamples:\n\nWarehouse:\n- Inventory Management\n- Picking & Packing\n- Logistics\n\nTransferable Skills:\n- Safety Compliance\n- Teamwork\n- Communication\n- Attention to Detail\n- Record Keeping\n- Time Management\n- Physical Stamina\n\nCandidates with transferable skills should receive partial credit even if they lack direct warehouse experience.\n\nDo not assign identical scores unless the candidates have equivalent qualifications.\nNever invent candidate names or skills."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        624,
+        32
+      ],
+      "id": "e9ebc240-e77a-4b44-b6be-54a8ef47da5d",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        496,
+        240
+      ],
+      "id": "ab6a191d-5d3e-4d2f-8747-96213c2a380c",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "S56bwQpS4qdK57Gu",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst output = [];\n\nfor (const item of items) {\n\n    let text = item.json.output;\n\n    // Remove markdown if present\n    text = text.replace(/```json/g, \"\");\n    text = text.replace(/```/g, \"\");\n    text = text.trim();\n\n    try {\n\n        const parsed = JSON.parse(text);\n\n        output.push({\n            json: parsed\n        });\n\n    } catch (error) {\n\n        output.push({\n            json: {\n                error: \"Invalid JSON returned by AI\",\n                raw: text\n            }\n        });\n\n    }\n\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        32
+      ],
+      "id": "12477ee0-cf5a-4be5-9aa0-60f070fff353",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nitems.sort((a, b) => b.json.score - a.json.score);\n\nconst medals = [\"🥇\", \"🥈\", \"🥉\"];\n\nreturn items.map((item, index) => ({\n  json: {\n    ...item.json,\n    rank: index + 1,\n    medal: medals[index] || \"🏅\"\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        32
+      ],
+      "id": "80e78f7f-494f-466b-9977-9cbdbc674466",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate a professional AI Resume Screening Report using ONLY the candidate data provided below.\n\nCandidate Data:\n{{ JSON.stringify($json.data, null, 2) }}\n\nIMPORTANT RULES\n\n1. Use ONLY the supplied candidate data.\n2. Never invent names, scores, skills, strengths, or weaknesses.\n3. Never change the ranking order. The first candidate is Rank 1, the second is Rank 2, the third is Rank 3.\n4. If two candidates have the same score, keep the order exactly as provided.\n5. Display all scores as percentages.\n6. Make the report professional and easy to read.\n\nGenerate the report in this format.\n\n# 📋 AI Resume Screening Report\n\n## 📊 Overall Summary\n\n- Total Candidates:\n- Best Candidate:\n- Highest Score:\n- Overall Hiring Summary:\n\n---\n\n## 🏆 Candidate Rankings\n\n🥇 Rank 1\n\nName:\n\nOverall Match Score:\n\nRecommendation:\n\n---\n\n🥈 Rank 2\n\nName:\n\nOverall Match Score:\n\nRecommendation:\n\n---\n\n🥉 Rank 3\n\nName:\n\nOverall Match Score:\n\nRecommendation:\n\n---\n\n## 👤 Candidate Details\n\nFor EACH candidate provide:\n\nName\n\nOverall Match Score\n\nMatching Skills\n\nMissing Skills\n\nStrengths\n\nWeaknesses\n\nReason for Score\n\nRecommendation\n\n--------------------------------------------------\n\n## ⭐ Best Candidate\n\nExplain why Rank 1 is the strongest candidate.\n\nMention:\n\n• Experience\n• Relevant Skills\n• Certifications\n• Overall suitability\n\n--------------------------------------------------\n\n## 📌 Final Hiring Recommendation\n\nGive a professional hiring recommendation.\n\nExample:\n\nProceed with the Rank 1 candidate for the interview.\n\nConsider Rank 2 only if additional candidates are required.\n\nDo not recommend Rank 3 due to insufficient match.\n\nReturn ONLY the report.",
+        "options": {
+          "systemMessage": "You are a Senior HR Recruitment Manager.\n\nGenerate professional recruitment reports.\n\nUse only the supplied candidate data.\n\nNever invent candidate names.\n\nNever invent scores.\n\nReturn plain text only."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1600,
+        32
+      ],
+      "id": "eef63130-8da0-4c8e-b059-dc92473e31ea",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        176
+      ],
+      "id": "c0d7ff1a-09d2-43e3-99f1-6c823be0cb68",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "S56bwQpS4qdK57Gu",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.email }}",
+        "subject": "RANKING AS PER RESUMES",
+        "emailType": "text",
+        "message": "={{ $json.output }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1952,
+        32
+      ],
+      "id": "3414509e-e24f-4539-865b-170b68587016",
+      "name": "Send a message",
+      "webhookId": "7494ccd9-9bba-45f6-bd2d-704b38e88b72",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "s2Xpo6bQ6Rar5YSc",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"message\": \"Resume screening completed successfully.\",\n  \"rankings\": [\n    {\n      \"candidate\": \"Rahul Sharma\",\n      \"score\": 95,\n      \"recommendation\": \"Highly Recommended\"\n    },\n    {\n      \"candidate\": \"John Smith\",\n      \"score\": 87,\n      \"recommendation\": \"Recommended\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2160,
+        32
+      ],
+      "id": "15b78ba5-af90-4959-b97f-9193936d98e7",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1392,
+        32
+      ],
+      "id": "9412e50b-2ebf-4e56-bb67-7cf202e851f4",
+      "name": "Aggregate"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "4c117dc1-764a-4a35-8345-c601c08ccdfd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "514e37121ed93fab39003008eb347c8c7abd65c0be84a7e168b982d6c27c7605"
+  },
+  "nodeGroups": [],
+  "id": "uezNK91rzc9K1mYm",
+  "tags": []
+}

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Resume Screening System</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+
+    <div class="background"></div>
+
+    <div class="container">
+
+        <div class="logo">
+            🤖
+        </div>
+
+        <h1>AI Resume Screening</h1>
+
+        <p class="subtitle">
+            Upload multiple resumes, enter the job description, and let AI rank the best candidates automatically.
+        </p>
+
+        <form id="uploadForm">
+
+            <!-- Job Description -->
+
+            <div class="form-group">
+
+                <label for="jobDescription">
+                    Job Description
+                </label>
+
+                <textarea
+                    id="jobDescription"
+                    placeholder="Paste the complete job description here..."
+                    required></textarea>
+
+            </div>
+
+            <!-- Resume Upload -->
+
+            <div class="form-group">
+
+                <label>
+                    Upload Candidate Resumes
+                </label>
+
+                <div class="upload-box">
+
+                    <input
+                        type="file"
+                        id="resumeFiles"
+                        accept=".pdf"
+                        multiple
+                        required>
+
+                    <div class="upload-content">
+
+                        <div class="upload-icon">
+                            📄
+                        </div>
+
+                        <h3>Drag & Drop Resumes</h3>
+
+                        <p>or click to browse</p>
+
+                        <small>Supports multiple PDF files</small>
+
+                    </div>
+
+                </div>
+
+                <div id="fileList"></div>
+
+            </div>
+
+            <!-- HR Email -->
+
+            <div class="form-group">
+
+                <label for="email">
+                    HR Email Address
+                </label>
+
+                <input
+                    type="email"
+                    id="email"
+                    placeholder="hr@company.com"
+                    required>
+
+            </div>
+
+            <!-- Button -->
+
+            <button type="submit">
+
+                Analyze Candidates
+
+            </button>
+
+        </form>
+
+        <!-- Status -->
+
+        <div id="status"></div>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
