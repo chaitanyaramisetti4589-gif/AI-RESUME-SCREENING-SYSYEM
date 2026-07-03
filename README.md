@@ -373,7 +373,7 @@ GitHub:
 https://github.com/chaitanyaramisetti4589-gif
 
 LinkedIn:
-(Add your LinkedIn URL)
+https://linkedin.com/chaitanya-ramisetti
 
 ---
 
